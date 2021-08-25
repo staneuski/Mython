@@ -66,7 +66,7 @@ void TestIds() {
 
 void TestStrings() {
     istringstream input(
-        R"('word' "two words" 'long string with a double quote " inside' "another long string with single quote ' inside")"s);
+        R"('word' "two words" 'long string with a double quote " inside' "another long string with single quote ' inside" "\"\'\t\n")"s);
     Lexer lexer(input);
 
     ASSERT_EQUAL(lexer.CurrentToken(), Token(token_type::String{"word"s}));
@@ -75,6 +75,7 @@ void TestStrings() {
                  Token(token_type::String{"long string with a double quote \" inside"s}));
     ASSERT_EQUAL(lexer.NextToken(),
                  Token(token_type::String{"another long string with single quote ' inside"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::String{"\"\'\t\n"s}));
 }
 
 void TestOperations() {
@@ -316,6 +317,7 @@ void TestAlwaysEmitsNewlineAtTheEndOfNonemptyLine() {
         ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Eof{}));
     }
 }
+
 void TestCommentsAreIgnored() {
     {
         istringstream is(R"(# comment
@@ -351,6 +353,96 @@ abc#
         ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Eof{}));
     }
 }
+
+void TestQuestionMark() {
+    istringstream input("You hardcode tests, right?"s);
+    Lexer lexer(input);
+
+    ASSERT_EQUAL(lexer.CurrentToken(), Token(token_type::Id{"You"}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"hardcode"}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"tests"}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{','}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"right"}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'?'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Newline{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Eof{}));
+}
+
+void TestAssignmentLeft() {
+    istringstream input("= assignment can be the first token"s);
+    Lexer lexer(input);
+
+    ASSERT_EQUAL(lexer.CurrentToken(), Token(token_type::Char{'='}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"assignment"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"can"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"be"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"the"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"first"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"token"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Newline{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Eof{}));
+}
+
+void TestAssignmentRight() {
+    istringstream input("assignment can be the last token ="s);
+    Lexer lexer(input);
+
+    ASSERT_EQUAL(lexer.CurrentToken(), Token(token_type::Id{"assignment"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"can"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"be"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"the"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"last"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"token"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'='}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Newline{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Eof{}));
+}
+
+void TestBool() {
+    istringstream input("== is not = ="s);
+    Lexer lexer(input);
+
+    ASSERT_EQUAL(lexer.CurrentToken(), Token(token_type::Eq{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Id{"is"s}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Not{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'='}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'='}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Newline{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Eof{}));
+}
+
+void TestLexems() {
+    istringstream input("+-*/= == != <> <= >= + - * / == = != >< =< =>"s);
+    Lexer lexer(input);
+
+    ASSERT_EQUAL(lexer.CurrentToken(), Token(token_type::Char{'+'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'-'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'*'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'/'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'='}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Eq{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::NotEq{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'<'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'>'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::LessOrEq{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::GreaterOrEq{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'+'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'-'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'*'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'/'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Eq{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'='}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::NotEq{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'>'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'<'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'='}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'<'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'='}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Char{'>'}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Newline{}));
+    ASSERT_EQUAL(lexer.NextToken(), Token(token_type::Eof{}));
+}
+
 }  // namespace
 
 void RunOpenLexerTests(TestRunner& tr) {
@@ -367,6 +459,11 @@ void RunOpenLexerTests(TestRunner& tr) {
     RUN_TEST(tr, parse::TestMythonProgram);
     RUN_TEST(tr, parse::TestAlwaysEmitsNewlineAtTheEndOfNonemptyLine);
     RUN_TEST(tr, parse::TestCommentsAreIgnored);
-}
 
+    RUN_TEST(tr, parse::TestQuestionMark);
+    RUN_TEST(tr, parse::TestAssignmentLeft);
+    RUN_TEST(tr, parse::TestAssignmentRight);
+    RUN_TEST(tr, parse::TestBool);
+    RUN_TEST(tr, parse::TestLexems);
+}
 }  // namespace parse

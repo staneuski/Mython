@@ -189,7 +189,6 @@ private:
                                 || CurrentToken().Is<token_type::Dedent>())
                ? Token(token_type::Eof{})
                : Token(token_type::Newline{});
-
     }
 
     Token ParseDigit();

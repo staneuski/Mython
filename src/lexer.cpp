@@ -154,14 +154,13 @@ Token Lexer::ParseString() {
     std::string str;
 
     const char quote = input_.get();
-    char c;
-    while ((c = input_.get()) != quote)
-        if (c == '\\')
-            switch (input_.peek()) {
+    for (char curr = input_.get(); curr != quote; curr = input_.get())
+        if (curr == '\\')
+            switch (const char next = input_.get(); next) {
             case '\'':
                 [[fallthrough]];
             case '\"':
-                str.push_back(input_.get());
+                str.push_back(next);
                 break;
             case 'n':
                 str.push_back('\n');
@@ -170,12 +169,12 @@ Token Lexer::ParseString() {
                 str.push_back('\t');
                 break;
             default:
-                str.push_back(c);
-                str.push_back(input_.get());
+                str.push_back(curr);
+                str.push_back(next);
                 break;
             }
         else
-            str.push_back(c);
+            str.push_back(curr);
 
     return token_type::String{str};
 }
