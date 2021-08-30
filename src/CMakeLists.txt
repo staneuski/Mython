@@ -11,4 +11,4 @@ add_compile_options(-Wall -Wextra -Werror)
 set(SRC_DIR ./)
 aux_source_directory(${SRC_DIR} SRC)
 
-add_executable(${PROJECT_NAME}-main ${SRC})
+add_executable(main ${SRC})
